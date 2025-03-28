@@ -42,6 +42,16 @@ end_date = st.sidebar.date_input("End Date", today)
 # Prediction days
 prediction_days = st.sidebar.slider("Prediction Days", 7, 90, 30)
 
+# Add Prophet model parameters to sidebar (after prediction_days)
+st.sidebar.subheader("Prophet Model Parameters")
+changepoint_prior_scale = st.sidebar.slider("Trend Flexibility", 0.001, 0.5, 0.05, 0.001)
+seasonality_prior_scale = st.sidebar.slider("Seasonality Strength", 0.01, 10.0, 10.0, 0.1)
+holidays_prior_scale = st.sidebar.slider("Holiday Effect", 0.01, 10.0, 10.0, 0.1)
+daily_seasonality = st.sidebar.checkbox("Daily Seasonality", value=True)
+weekly_seasonality = st.sidebar.checkbox("Weekly Seasonality", value=True)
+yearly_seasonality = st.sidebar.checkbox("Yearly Seasonality", value=True)
+confidence_interval = st.sidebar.slider("Confidence Interval", 0.8, 0.99, 0.95, 0.01)
+
 # Add option pricing parameters
 st.sidebar.header("Option Pricing Parameters")
 current_price = st.sidebar.number_input("Current Asset Price", min_value=1.0, value=100.0, step=1.0)
@@ -156,8 +166,21 @@ def predict_with_prophet(data, periods):
         df_prophet = data.reset_index()[['Date', 'Close']]
         df_prophet.columns = ['ds', 'y']
         
-        # Initialize and fit the model
-        model = Prophet(daily_seasonality=True)
+        # Initialize and fit the model with custom parameters
+        model = Prophet(
+            changepoint_prior_scale=changepoint_prior_scale,
+            seasonality_prior_scale=seasonality_prior_scale,
+            holidays_prior_scale=holidays_prior_scale,
+            daily_seasonality=daily_seasonality,
+            weekly_seasonality=weekly_seasonality,
+            yearly_seasonality=yearly_seasonality,
+            interval_width=confidence_interval
+        )
+        
+        # Add US holidays
+        model.add_country_holidays(country_name='US')
+        
+        # Fit the model
         model.fit(df_prophet)
         
         # Create future dataframe
@@ -202,12 +225,31 @@ def predict_with_prophet(data, periods):
             xaxis_title="Date",
             yaxis_title="Price",
             showlegend=True,
-            height=600
+            height=600,
+            hovermode='x unified',
+            plot_bgcolor='white',
+            xaxis=dict(
+                showgrid=True, 
+                gridwidth=1, 
+                gridcolor='#f0f0f0',
+                type='date',
+                dtick="M1",
+                tickformat="%b %Y"
+            ),
+            yaxis=dict(
+                showgrid=True, 
+                gridwidth=1, 
+                gridcolor='#f0f0f0',
+                tickprefix="$"
+            )
         )
         
         return forecast, fig
+        
     except Exception as e:
         st.error(f"Error in Prophet prediction: {e}")
+        import traceback
+        st.error(f"Detailed error: {traceback.format_exc()}")
         raise e
 
 def predict_with_arima(data, periods):
@@ -844,3 +886,4 @@ Note: These predictions are for educational purposes only and should not be used
 """)
 
 # Run the app with: streamlit run app.py
+
