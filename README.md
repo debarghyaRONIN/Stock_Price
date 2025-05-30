@@ -52,7 +52,7 @@ A powerful Streamlit-based web application for stock price analysis, prediction,
 ## 📦 Installation
 
 ```bash
-git clone https://github.com/yourusername/stock-price-prediction.git
+git clone https://github.com/debarghyaRONIN/Stock_Price.git
 cd stock-price-prediction
 pip install -r requirements.txt
 ```
